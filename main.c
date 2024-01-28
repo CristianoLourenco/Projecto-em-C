@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <conio.h>
+#include <string.h>
 
 enum tipo{
     empresa = 0,
@@ -36,10 +37,11 @@ typedef struct CONTA CONTAS;
 
 PESSOAS clientes[100];
 CONTAS contas[100];
-int total_clientes;
-int total_contas;
+int total_clientes=0;
+int total_contas=0;
 
-const char* filePath = "E:\\Ambiente de trabalho\\file.txt";
+
+FILE* file;
 
 
 void smsretult(int condicao,char smsTrue[], char smsFalse[])
@@ -333,26 +335,28 @@ void caseActualizar()
 }
 
 
-
+//Ficheiro
 void copia_de_seguranca()
 {
 
-   FILE* file =  fopen(filePath,"w+");
+   file =  fopen("file.txt","w");
    if(file == NULL)
    return;
 
-   for(int indice = 0;indice < total_clientes;++indice)
+   for(int indice = 0;indice < total_clientes ;++indice)
    {
-       	if(clientes[indice].codigo == EOF)
+       	if(clientes[indice].codigo == EOF){
             return;
+        }
+
 		PESSOAS p = clientes[indice];
-        fprintf(file,"%d,%s,%s,%d",p.codigo, p.nome,p.identificacao,p.telefone);
+        fprintf(file,"%d;%s;%s;%d;%d",p.codigo, p.nome,p.identificacao,p.telefone,p.tipoPessoa);
 
 	 	if(buscar_conta(p.codigo) != -1)
         {
             CONTAS c = contas[indice];
             c.estado = 1 ;
-            fprintf(file,"%d,%d,%d,%.2f,%d\n",c.codigo,c.codigo_cliente,c.estado,c.saldo,c.numero_conta);
+            fprintf(file,":%d;%d;%d;%.2f;%d;%d\n",c.codigo,c.codigo_cliente,c.estado,c.saldo,c.numero_conta, c.tipoConta);
         }
         else
         {
@@ -361,6 +365,53 @@ void copia_de_seguranca()
 
    }
    fclose(file);
+}
+
+void carregarficheiro(){
+    file = fopen("file.txt", "r");
+    if (file == NULL)
+        return;
+
+
+    char linha[1000];
+    while(fscanf(file, "%[^\n]\n", &linha)== 1){
+        char *token = strtok(linha, ";" );
+        char *quebradas[11];
+
+        int tamanho = 0;
+        while (token != NULL){
+            quebradas[tamanho]= token;
+            token = strtok(NULL, ";");
+            tamanho++;
+        }
+        PESSOAS p;
+        CONTAS c;
+
+        p.codigo=atoi(quebradas[0]);
+        strcpy(p.nome, quebradas[1]);
+        strcpy(p.identificacao, quebradas[2]);
+        sscanf(quebradas[3], "%d", &p.telefone);
+        p.tipoPessoa = atoi(quebradas[4]);
+
+        clientes[total_clientes]=p;
+        total_clientes++;
+
+        if (tamanho == 5)
+            continue;
+        else
+        {
+            c.codigo =atoi(quebradas[5]);
+            c.codigo_cliente = atoi(quebradas[6]);
+            c.estado = atoi(quebradas[7]);
+            c.saldo = atof(quebradas[8]);
+            c.numero_conta=atoi(quebradas[9]);
+            c.tipoConta = atoi(quebradas[10]);
+
+            contas[total_contas]=c;
+            total_contas++;
+        }
+    }
+    fclose(file);
 }
 
 void resultado(int condicao)
@@ -377,7 +428,7 @@ void resultado(int condicao)
 
 
 int main(){
-
+ carregarficheiro();
  int opcao = 0;
  while(opcao != 9)
  {
